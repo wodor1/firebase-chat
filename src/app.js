@@ -30,7 +30,9 @@ function createMessage() {
   const message = document.querySelector('#message').value;
   const username = document.querySelector('#nickname').value;
   const date = Timestamp.now();
-  return { message, username, date };
+  const myTimestamp = new Date(date.seconds * 1000).toLocaleString("hu-HU");
+  console.log(myTimestamp);
+  return { message, username, date, myTimestamp };
 }
 
 /**
@@ -51,7 +53,7 @@ function displayMessage(message) {
       <i class="fas fa-user"></i>
       <div>
         <span class="username">${message.username}
-          <time>20:12 PM</time>
+          <time>${message.myTimestamp}</time>
         </span>
         <br>
         <span class="message-text">
