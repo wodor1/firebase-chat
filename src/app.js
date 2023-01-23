@@ -9,7 +9,14 @@ import {
   query,
   orderBy,
   getDocs,
-  onSnapshot
+  onSnapshot,
+  doc,
+  setDoc,
+  getDoc,
+  deleteDoc,
+  updateDoc,
+  FieldValue,
+  DocumentSnapshot,
 } from 'firebase/firestore';
 import scrollIntoView from 'scroll-into-view-if-needed';
 
@@ -24,6 +31,8 @@ const db = getFirestore(app);
 async function sendMessage(message) {
   const docRef = await addDoc(collection(db, 'messages'), message);
   console.log('Document written with ID: ', docRef.id);
+  document.querySelector('#message').value = '';
+  document.getElementById('newMessage').dataset.id = docRef.id;
 }
 
 function createMessage() {
@@ -31,8 +40,15 @@ function createMessage() {
   const username = document.querySelector('#nickname').value;
   const date = Timestamp.now();
   const myTimestamp = new Date(date.seconds * 1000).toLocaleString("hu-HU");
-  console.log(myTimestamp);
-  return { message, username, date, myTimestamp };
+  return { message, username, date, myTimestamp, };
+}
+
+async function deleteMessage() {
+  console.log(document.getElementById('newMessage').dataset.id);
+  const docRef = doc(db, 'messages', this.parentElement.parentElement.dataset.id);
+  await deleteDoc(docRef);
+  console.log(docRef.id);
+  console.log('Document deleted');
 }
 
 /**
@@ -48,8 +64,9 @@ async function displayAllMessages() {
 }
 
 function displayMessage(message) {
+  console.log(document.getElementById('newMessage'));
   const messageHTML = /*html*/ `
-    <div class="message">
+    <div class="message" id="newMessage" data-id="${message.id}">
       <i class="fas fa-user"></i>
       <div>
         <span class="username">${message.username}
@@ -71,11 +88,18 @@ function displayMessage(message) {
     scrollMode: 'if-needed',
     block: 'end'
   });
+  document.querySelector(`[data-id="${message.id}"] .fa-trash-alt`).addEventListener('click', deleteMessage);
+  //document.querySelector(`[data-id="${message.id}"] .fa-pen`).addEventListener('click', displayEditMessage);
+}
+
+function removeMessage(message) {
+  document.querySelector(`[data-id="${message.id}"]`).remove();
 }
 
 function handleSubmit() {
   const message = createMessage();
-  sendMessage(message);
+  if (message.message && message.username)
+    sendMessage(message);
   //displayMessage(message);
 }
 
@@ -108,9 +132,11 @@ onSnapshot(q, (snapshot) => {
     }
     if (change.type === 'modified') {
       console.log('Modified');
+      //updateMessage(change.doc.data());
     }
     if (change.type === 'removed') {
       console.log('Removed');
+      removeMessage(change.doc.data());
     }
   });
   initialLoad = false;
