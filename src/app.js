@@ -15,7 +15,6 @@ import {
   getDoc,
   deleteDoc,
   updateDoc,
-  FieldValue,
   DocumentSnapshot,
 } from 'firebase/firestore';
 import scrollIntoView from 'scroll-into-view-if-needed';
@@ -32,7 +31,6 @@ async function sendMessage(message) {
   const docRef = await addDoc(collection(db, 'messages'), message);
   console.log('Document written with ID: ', docRef.id);
   document.querySelector('#message').value = '';
-  document.getElementById('newMessage').dataset.id = docRef.id;
 }
 
 function createMessage() {
@@ -40,15 +38,14 @@ function createMessage() {
   const username = document.querySelector('#nickname').value;
   const date = Timestamp.now();
   const myTimestamp = new Date(date.seconds * 1000).toLocaleString("hu-HU");
-  return { message, username, date, myTimestamp, };
+  return { message, username, date, myTimestamp };
 }
 
 async function deleteMessage() {
-  console.log(document.getElementById('newMessage').dataset.id);
+  //const id = document.getElementById('newMessage').dataset.id;
   const docRef = doc(db, 'messages', this.parentElement.parentElement.dataset.id);
   await deleteDoc(docRef);
-  console.log(docRef.id);
-  console.log('Document deleted');
+  console.log('Document deleted with ID: ', docRef.id);
 }
 
 /**
@@ -59,14 +56,14 @@ async function displayAllMessages() {
   const messages = await getDocs(q);
   document.querySelector('#messages').innerHTML = '';
   messages.forEach((doc) => {
-    displayMessage(doc.data());
+    displayMessage(doc.data(), doc.id);
   });
 }
 
-function displayMessage(message) {
-  console.log(document.getElementById('newMessage'));
+function displayMessage(message, id) {
+  console.log(id);
   const messageHTML = /*html*/ `
-    <div class="message" id="newMessage" data-id="${message.id}">
+    <div class="message" id="newMessage" data-id="${id}">
       <i class="fas fa-user"></i>
       <div>
         <span class="username">${message.username}
@@ -88,12 +85,12 @@ function displayMessage(message) {
     scrollMode: 'if-needed',
     block: 'end'
   });
-  document.querySelector(`[data-id="${message.id}"] .fa-trash-alt`).addEventListener('click', deleteMessage);
-  //document.querySelector(`[data-id="${message.id}"] .fa-pen`).addEventListener('click', displayEditMessage);
+  document.querySelector(`[data-id="${id}"] .fa-trash-alt`).addEventListener('click', deleteMessage);
+  //document.querySelector(`[data-id="${id}"] .fa-pen`).addEventListener('click', editMessage);
 }
 
-function removeMessage(message) {
-  document.querySelector(`[data-id="${message.id}"]`).remove();
+function removeMessage(id) {
+  document.querySelector(`[data-id="${id}"]`).remove();
 }
 
 function handleSubmit() {
@@ -125,18 +122,18 @@ const q = query(collection(db, 'messages'), orderBy('date', 'asc'));
 onSnapshot(q, (snapshot) => {
   snapshot.docChanges().forEach((change) => {
     if (change.type === 'added') {
-      console.log('added');
+      console.log('Added');
       if (!initialLoad) {
-        displayMessage(change.doc.data());
+        displayMessage(change.doc.data(), change.doc.id);
       }
     }
     if (change.type === 'modified') {
       console.log('Modified');
-      //updateMessage(change.doc.data());
+      //updateMessage(change.doc.data(), change.doc.id);
     }
     if (change.type === 'removed') {
       console.log('Removed');
-      removeMessage(change.doc.data());
+      removeMessage(change.doc.id);
     }
   });
   initialLoad = false;
