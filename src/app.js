@@ -61,7 +61,6 @@ async function displayAllMessages() {
 }
 
 function displayMessage(message, id) {
-  console.log(id);
   const messageHTML = /*html*/ `
     <div class="message" id="newMessage" data-id="${id}">
       <i class="fas fa-user"></i>
@@ -86,12 +85,19 @@ function displayMessage(message, id) {
     block: 'end'
   });
   document.querySelector(`[data-id="${id}"] .fa-trash-alt`).addEventListener('click', deleteMessage);
-  //document.querySelector(`[data-id="${id}"] .fa-pen`).addEventListener('click', editMessage);
+  document.querySelector(`[data-id="${id}"] .fa-pen`).addEventListener('click', () => displayEditMessage(id));
 }
 
 function removeMessage(id) {
   document.querySelector(`[data-id="${id}"]`).remove();
 }
+
+/* async function modifyMessage() {
+  const docRef = doc(db, 'messages', this.id);
+  await updateDoc(docRef, {
+    message: document.querySelector('#edit').value,
+  });
+} */
 
 function handleSubmit() {
   const message = createMessage();
@@ -114,6 +120,42 @@ window.addEventListener('DOMContentLoaded', () => {
   displayAllMessages();
 });
 
+function displayEditMessage(id) {
+  const editPopupHTML = /*html*/ `
+    <div class="popup-container" id="popup">
+      <div class="edit-message" id="edit-message" data-id="${id}">
+        <div id="close-popup" class="button">
+          Close <i class="fa fa-window-close" aria-hidden="true"></i>
+        </div>
+        <textarea id="edit" name="" cols="30" rows="10">${document
+          .querySelector(`.message[data-id="${id}"] .message-text`)
+          .textContent.trim()}</textarea>
+        <div id="save-message" class="button">Save message<i class="fas fa-save"></i>
+        </div>
+      </div>
+    </div>
+`;
+document.querySelector('body').insertAdjacentHTML('beforeend', editPopupHTML);
+document.querySelector('#close-popup').addEventListener('click', () => closePopup());
+document.querySelector('#save-message').addEventListener('click', () => saveMessage());
+}
+
+function closePopup() {
+  document.querySelector('#popup').remove();
+}
+
+function saveMessage() {
+  const id = document.querySelector('#edit-message').dataset.id;
+  const docRef = doc(db, 'messages', id);
+  const message = document.querySelector('#edit').value;
+  const username = document.querySelector('#nickname').value;
+  const date = Timestamp.now();
+  const myTimestamp = new Date(date.seconds * 1000).toLocaleString("hu-HU");
+  const editedMessage = { message, username, date, myTimestamp };
+  updateDoc(docRef, editedMessage);
+  closePopup();
+}
+
 // document.querySelector('#messages').innerHTML = '';
 
 let initialLoad = true;
@@ -128,8 +170,8 @@ onSnapshot(q, (snapshot) => {
       }
     }
     if (change.type === 'modified') {
-      console.log('Modified');
-      //updateMessage(change.doc.data(), change.doc.id);
+      console.log('Modified message with ID: ', change.doc.id);
+      displayAllMessages();
     }
     if (change.type === 'removed') {
       console.log('Removed');
